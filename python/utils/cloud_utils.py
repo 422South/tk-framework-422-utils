@@ -12,7 +12,7 @@ logger = sgtk.platform.get_logger(__name__)
 
 fw = sgtk.platform.get_framework("tk-botoPackages")
 
-package_path = os.path.join(fw.disk_location, fw.version[1:], 'python')
+package_path = os.path.join(fw.disk_location,  'python')
 logger.debug("Added path %s" % package_path)
 if package_path not in sys.path:
     sys.path.insert(1, package_path)
