@@ -28,4 +28,4 @@ requires_core_version: "v0.19.1"
 
 # the frameworks required to run this app
 frameworks:
-   - {"name": "tk-botoPackages", "version": "v1.x.x"}
+   - {"name": "tk-botoPackages", "version": "v1.0.3"}
