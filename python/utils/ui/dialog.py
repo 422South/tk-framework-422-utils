@@ -20,7 +20,7 @@ import threading
 # the code will be compatible with both PySide and PyQt.
 
 from sgtk.platform.qt import QtCore, QtGui
-from status_widget import Ui_Dialog
+from .status_widget import Ui_Dialog
 
 # standard toolkit logger
 logger = sgtk.platform.get_logger(__name__)

@@ -1,4 +1,5 @@
 import os
+from tank_vendor import six
 from sgtk.platform.qt import QtCore, QtGui
 import zipfile
 import hmac
@@ -11,8 +12,11 @@ from sgtk.util import filesystem
 logger = sgtk.platform.get_logger(__name__)
 
 fw = sgtk.platform.get_framework("tk-botoPackages")
+if six.PY3:
+    package_path = os.path.join(fw.disk_location,  'python3')
+else:
+    package_path = os.path.join(fw.disk_location, 'python27')
 
-package_path = os.path.join(fw.disk_location,  'python')
 logger.debug("Added path %s" % package_path)
 if package_path not in sys.path:
     sys.path.insert(1, package_path)
@@ -20,7 +24,7 @@ if package_path not in sys.path:
 import boto3
 import requests
 
-import ui.dialog as dialog
+from .ui.dialog import show_dialog
 
 
 
@@ -47,7 +51,7 @@ def isMachineRemote():
 def downloadFromCloud(shotgunInstance, context, srcPath, destPath=None):
     # INSTALL PIP AND BOTO
     global loadingDialog
-    loadingDialog = dialog.show_dialog()
+    loadingDialog = show_dialog()
     loadingDialog.updateLabel("Loading prerequisite libraries...")
     logger.info("Loading prerequisite libraries...")
     # Get the S3 access keys
@@ -57,11 +61,11 @@ def downloadFromCloud(shotgunInstance, context, srcPath, destPath=None):
     logger.info("Obtaining cloud server login information...")
 
     key = shotgunInstance.find_one('CustomNonProjectEntity02', [['code', 'is', 'verifyUserKey']], ['sg_key'])['sg_key']
-    stringToVerify = str(shotgunInstance.find_one('CustomNonProjectEntity02', [['code', 'is', 'verifyUserKey']], ['description'])['description'])
+    stringToVerify = six.ensure_str(shotgunInstance.find_one('CustomNonProjectEntity02', [['code', 'is', 'verifyUserKey']], ['description'])['description'])
     dataObj = hmac.new(key, stringToVerify, hashlib.sha1).hexdigest()
 
     fileNameToDownload = os.path.basename(srcPath)
-    infoToLog = context.user['name'] + ' downloaded ' + str(fileNameToDownload) + ' from ' + context.project['name'] + ' from the cloud'
+    infoToLog = context.user['name'] + ' downloaded ' + six.ensure_str(fileNameToDownload) + ' from ' + context.project['name'] + ' from the cloud'
     myObj = {'stringToVerify': dataObj, 'logInfo': infoToLog}
     response = requests.post(url="https://deadline.422south.com/shotgun/getKeys", data=myObj)
 
@@ -80,7 +84,7 @@ def downloadFromCloud(shotgunInstance, context, srcPath, destPath=None):
     bucketName = '422-south-shotgun'
     client = boto3.client('s3', aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY)
 
-    pubFile = shotgunInstance.find_one('PublishedFile', [['code', 'is', str(fileNameToDownload)]],
+    pubFile = shotgunInstance.find_one('PublishedFile', [['code', 'is', six.ensure_str(fileNameToDownload)]],
                                             ['sg_cloudpublishstatus', 'path_cache', 'id',
                                              'sg_cloudpublishtextures',
                                              'sg_cloudpublishfolderpath', 'path_cache_storage'])
@@ -157,9 +161,9 @@ def downloadFromCloud(shotgunInstance, context, srcPath, destPath=None):
         texturesDict = ast.literal_eval(textures)
         for textureInfo in texturesDict:
             loadingDialog.updateLabel(
-                "Downloading texture " + str(count) + " of " + str(len(texturesDict)) + " from cloud...")
+                "Downloading texture " + six.ensure_str(count) + " of " + six.ensure_str(len(texturesDict)) + " from cloud...")
             QtGui.QApplication.processEvents()
-            logger.info("Downloading texture " + str(count) + " of " + str(len(texturesDict)) + " from cloud...")
+            logger.info("Downloading texture " + six.ensure_str(count) + " of " + six.ensure_str(len(texturesDict)) + " from cloud...")
 
             texturePath = os.path.join(filePathBase, textureInfo[0])
             if not destPath:
