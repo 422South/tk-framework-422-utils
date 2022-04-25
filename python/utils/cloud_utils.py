@@ -61,8 +61,8 @@ def downloadFromCloud(shotgunInstance, context, srcPath, destPath=None):
     logger.info("Obtaining cloud server login information...")
 
     key = shotgunInstance.find_one('CustomNonProjectEntity02', [['code', 'is', 'verifyUserKey']], ['sg_key'])['sg_key']
-    stringToVerify = six.ensure_str(shotgunInstance.find_one('CustomNonProjectEntity02', [['code', 'is', 'verifyUserKey']], ['description'])['description'])
-    dataObj = hmac.new(key, stringToVerify, hashlib.sha1).hexdigest()
+    stringToVerify = shotgunInstance.find_one('CustomNonProjectEntity02', [['code', 'is', 'verifyUserKey']], ['description'])['description']
+    dataObj = hmac.new(six.ensure_binary(key), six.ensure_binary(stringToVerify), hashlib.sha1).hexdigest()
 
     fileNameToDownload = os.path.basename(srcPath)
     infoToLog = context.user['name'] + ' downloaded ' + six.ensure_str(fileNameToDownload) + ' from ' + context.project['name'] + ' from the cloud'
