@@ -18,7 +18,7 @@ requires_shotgun_fields:
 
 # More verbose description of this item
 # More verbose description of this item
-display_name: "tk-422-utils"
+display_name: "tk-framework-422-utils"
 description: "Misc pipeline utils"
 
 # Required minimum versions for this item to run
@@ -28,4 +28,4 @@ requires_core_version: "v0.19.1"
 
 # the frameworks required to run this app
 frameworks:
-   - {"name": "tk-botoPackages", "version": "v1.0.4"}
+   - {"name": "tk-framework-tk-botoPackages", "version": "v1.x.x"}
