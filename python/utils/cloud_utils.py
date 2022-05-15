@@ -11,7 +11,7 @@ from sgtk.util import filesystem
 
 logger = sgtk.platform.get_logger(__name__)
 
-fw = sgtk.platform.get_framework("tk-botoPackages")
+fw = sgtk.platform.get_framework("tk-framework-botopackages")
 if six.PY3:
     package_path = os.path.join(fw.disk_location,  'python3')
 else:
