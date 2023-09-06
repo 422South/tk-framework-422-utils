@@ -4,7 +4,6 @@ import datetime
 
 
 def sequence_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate=25):
-
     # pathToImageSequence example --> publishToCloudTestAsset_scene_persp.v020.%04d.png
     # Finds the start frame of the sequence based off the file path
     imageFileBaseName = os.path.basename(os.path.splitext(pathToImageSequence)[0])[:-5]
@@ -25,18 +24,22 @@ def sequence_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate
     # fontPath requires some weird formatting to work inside subprocess for ffmpeg.exe
     # The : needs to be escaped, no other backslashes can be present
 
-    subprocess.call([ffmpegPath, '-r', str(frame_rate), '-start_number', startFrame, '-gamma', '2.2', '-i', pathToImageSequence, '-i', logoPath,
-                     '-filter_complex',
-                     "[0:v][1:v]overlay=(main_w-overlay_w)-10:10,"
-                     "drawtext=fontsize=" + str(fontSize) + ":x=10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='" + fileName.replace('_Tags.mp4', '') + "',"
-                     "drawtext=fontsize=" + str(fontSize) + ":x=w-tw-10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='Frame\: %{n}':start_number=1",
-                     '-pix_fmt', 'yuv420p',
-                     '-b:v', '30000k', outputFilePath, '-y'])
+    subprocess.call(
+        [ffmpegPath, '-r', str(frame_rate), '-start_number', startFrame, '-gamma', '2.2', '-i', pathToImageSequence,
+         '-i', logoPath,
+         '-filter_complex',
+         "[0:v][1:v]overlay=(main_w-overlay_w)-10:10,"
+         "drawtext=fontsize=" + str(
+             fontSize) + ":x=10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='" + fileName.replace(
+             '_Tags.mp4', '') + "',"
+                                "drawtext=fontsize=" + str(
+             fontSize) + ":x=w-tw-10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='Frame\: %{n}':start_number=1",
+         '-pix_fmt', 'yuv420p',
+         '-b:v', '30000k', outputFilePath, '-y'])
     return
 
 
 def video_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate=25):
-
     fontSize = 38
     current_dir = os.path.dirname(os.path.realpath(__file__))
     ffmpegPath = os.path.join(current_dir, 'ffmpeg')
@@ -45,14 +48,31 @@ def video_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate=25
         ':', '\:')
     # fontPath requires some weird formatting to work inside subprocess for ffmpeg.exe
     # The : needs to be escaped, no other backslashes can be present
+    call_args = [ffmpegPath, '-r', str(frame_rate), '-gamma', '2.2', '-i', pathToImageSequence, '-i', logoPath,
+                 '-filter_complex',
+                 "[0:v][1:v]overlay=(main_w-overlay_w)-10:10,"
+                 "drawtext=fontsize=" + str(
+                     fontSize) + ":x=10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='" + fileName.replace(
+                     '_Tags.mp4', '') + "',"
+                                        "drawtext=fontsize=" + str(
+                     fontSize) + ":x=w-tw-10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='Frame\: %{n}':start_number=1",
+                 '-pix_fmt', 'yuv420p',
+                 '-b:v', '30000k', outputFilePath, '-y']
 
-    subprocess.call([ffmpegPath, '-r', str(frame_rate), '-gamma', '2.2', '-i', pathToImageSequence, '-i', logoPath,
+    extension = pathToImageSequence.split('.')[-1]
+    if extension and extension.lower() in ['tif', 'tiff']:
+        call_args = [ffmpegPath, '-r', str(frame_rate), '-i', pathToImageSequence, '-i', logoPath,
                      '-filter_complex',
                      "[0:v][1:v]overlay=(main_w-overlay_w)-10:10,"
-                     "drawtext=fontsize=" + str(fontSize) + ":x=10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='" + fileName.replace('_Tags.mp4', '') + "',"
-                     "drawtext=fontsize=" + str(fontSize) + ":x=w-tw-10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='Frame\: %{n}':start_number=1",
+                     "drawtext=fontsize=" + str(
+                         fontSize) + ":x=10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='" + fileName.replace(
+                         '_Tags.mp4', '') + "',"
+                                            "drawtext=fontsize=" + str(
+                         fontSize) + ":x=w-tw-10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='Frame\: %{n}':start_number=1",
                      '-pix_fmt', 'yuv420p',
-                     '-b:v', '30000k', outputFilePath, '-y'])
+                     '-b:v', '30000k', outputFilePath, '-y']
+
+    subprocess.call(call_args)
     return
 
 
@@ -125,12 +145,11 @@ def image_transcode_withTags(inputImage, outputImage, burnIns, extraMsg):
     subprocess.call([ffmpegPath, '-i', inputImage, '-i', logoPath,
                      '-filter_complex',
                      "[0:v][1:v]overlay=(main_w-overlay_w)-10:10,"
-                     "drawtext=fontsize=" + str(fontSize - 2) + ":x=(w-text_w)/2:y=10:fontcolor=White:fontfile='" + fontPath + "':text='" + extraMsg + "',"
-                     "drawtext=fontsize=" + str(fontSize) + ":x=(w-text_w)/2:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='" + burnIns + "'",
+                     "drawtext=fontsize=" + str(
+                         fontSize - 2) + ":x=(w-text_w)/2:y=10:fontcolor=White:fontfile='" + fontPath + "':text='" + extraMsg + "',"
+                                                                                                                                "drawtext=fontsize=" + str(
+                         fontSize) + ":x=(w-text_w)/2:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='" + burnIns + "'",
                      '-pix_fmt', 'yuv420p',
                      outputImage, '-y'])
 
     return
-
-
-
