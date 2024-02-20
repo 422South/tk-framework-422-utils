@@ -12,14 +12,12 @@ from sgtk.util import filesystem
 logger = sgtk.platform.get_logger(__name__)
 
 fw = sgtk.platform.get_framework("tk-framework-botopackages")
-if six.PY3:
-    package_path = os.path.join(fw.disk_location,  'python3')
-else:
-    package_path = os.path.join(fw.disk_location, 'python27')
+
+package_path = os.path.join(fw.disk_location,  'python')
 
 logger.debug("Added path %s" % package_path)
 if package_path not in sys.path:
-    sys.path.insert(1, package_path)
+    sys.path.insert(0, package_path)
 
 import boto3
 import requests
