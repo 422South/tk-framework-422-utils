@@ -46,6 +46,7 @@ def video_transcode_audio(fileName, pathToImageSequence, outputFilePath, audio_f
     logoPath = os.path.join(current_dir, '422Logo.png')
     fontPath = os.path.join(current_dir, 'Moderat-Regular.otf').replace('\\', '/').replace(
         ':', '\:')
+
     # fontPath requires some weird formatting to work inside subprocess for ffmpeg.exe
     # The : needs to be escaped, no other backslashes can be present
     if float(start_frame) - float(audio_start) < 0:
@@ -57,8 +58,16 @@ def video_transcode_audio(fileName, pathToImageSequence, outputFilePath, audio_f
 
     audioDuration = '0' + str(datetime.timedelta(seconds=(duration/ float(frame_rate))))
 
-    call_args = [ffmpegPath, '-r', str(frame_rate), '-gamma', '2.2', '-i', pathToImageSequence, '-i', logoPath,
-                 '-ss', audioStartTime, '-i', audio_file,
+    # jim - mix in a silent stream of audio to prevent audio slippage when publishing to SG
+    silenceFile = "S:\\Projects\\422_LIBRARY\\02_ASSETS\\AUDIO\\silence.wav"
+    audioSlipSpit = audioStartTime.split(":")
+    audioSlipSec = audioSlipSpit[2]
+    audioDelay = int(float(float(audioSlipSec) * float(frame_rate)) * ((1 / float(frame_rate)) * 1000))
+
+    cmdLineArray = [ffmpegPath, '-r', str(frame_rate), '-gamma', '2.2', '-i', pathToImageSequence, '-i', logoPath,
+                    '-i', silenceFile, '-i', audio_file,
+                    '-filter_complex',
+                    '"[2]adelay=' + str(audioDelay) + '|' + str(audioDelay) + '[a2];[1][a2]amix=inputs=2:duration=longest[a]"', '-map [a]',
                  '-filter_complex',
                  "[0:v][1:v]overlay=(main_w-overlay_w)-10:10,"
                  "drawtext=fontsize=" + str(
@@ -71,8 +80,10 @@ def video_transcode_audio(fileName, pathToImageSequence, outputFilePath, audio_f
 
     extension = pathToImageSequence.split('.')[-1]
     if extension and extension.lower() in ['tif', 'tiff']:
-        call_args = [ffmpegPath, '-r', str(frame_rate), '-i', pathToImageSequence, '-i', logoPath,
-                     '-ss', audioStartTime, '-i', audio_file,
+        cmdLineArray = [ffmpegPath, '-r', str(frame_rate), '-i', pathToImageSequence, '-i', logoPath,
+                        '-i', silenceFile, '-i', audio_file,
+                        '-filter_complex',
+                        '"[2]adelay=' + str(audioDelay) + '|' + str(audioDelay) + '[a2];[1][a2]amix=inputs=2:duration=longest[a]"', '-map [a]',
                      '-filter_complex',
                      "[0:v][1:v]overlay=(main_w-overlay_w)-10:10,"
                      "drawtext=fontsize=" + str(
@@ -83,7 +94,9 @@ def video_transcode_audio(fileName, pathToImageSequence, outputFilePath, audio_f
                      '-pix_fmt', 'yuv420p',
                      '-b:v', '30000k', '-to', audioDuration, outputFilePath, '-y', '-vsync', 'passthrough']
 
-    subprocess.call(call_args)
+    cmdLine = " ".join(cmdLineArray)
+
+    subprocess.call(cmdLine)
     return
 
 
@@ -168,18 +181,38 @@ def sequence_transcode_withoutTags_withAudio(pathToImageSequence, outputFilePath
             datetime.timedelta(seconds=(float(startFrame) - float(frameOffset)) / float(frame_rate)))
 
     audioDuration = '0' + str(datetime.timedelta(seconds=(float(endFrame) - float(startFrame)) / float(frame_rate)))
-    cmdLine = [ffmpegPath, '-r', str(frame_rate), '-start_number', startFrame, '-i', pathToImageSequence, '-ss',
-               audioStartTime, '-i', audioFile,
+    # cmdLine = [ffmpegPath, '-r', str(frame_rate), '-start_number', startFrame, '-i', pathToImageSequence, '-ss',
+    #            audioStartTime, '-i', audioFile,
+    #            '-filter_complex',
+    #            "drawtext=fontsize=" + str(
+    #                fontSize) + ":x=(w-text_w)/2:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='" + playblastFileName + "',"
+    #                                                                                                                                 "drawtext=fontsize=" + str(
+    #                fontSize - 2) + ":x=(w-text_w)/2:y=10:fontcolor=White:fontfile='" + fontPath + "':text='" + extraMessage + "'",
+    #            '-pix_fmt', 'yuv420p',
+    #            '-b:v', '30000k', '-to', audioDuration, outputFilePath, '-y', '-vsync', 'passthrough']
+
+    # jim - mix in a silent stream of audio to prevent audio slippage when publishing to SG
+    silenceFile = "S:\\Projects\\422_LIBRARY\\02_ASSETS\\AUDIO\\silence.wav"
+    audioSlipSpit = audioStartTime.split(":")
+    audioSlipSec = audioSlipSpit[2]
+    audioDelay = int(float(float(audioSlipSec) * float(frame_rate)) * ((1 / float(frame_rate)) * 1000))
+
+    cmdLineArray = [ffmpegPath, '-r', str(frame_rate), '-start_number', startFrame, '-i', pathToImageSequence,
+                    '-i', silenceFile, '-i', audioFile,
+                    '-filter_complex',
+                    '"[2]adelay=' + str(audioDelay) + '|' + str(audioDelay) + '[a2];[1][a2]amix=inputs=2:duration=longest[a]"', '-map [a]',
                '-filter_complex',
                "drawtext=fontsize=" + str(
                    fontSize) + ":x=(w-text_w)/2:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='" + playblastFileName + "',"
                                                                                                                                     "drawtext=fontsize=" + str(
                    fontSize - 2) + ":x=(w-text_w)/2:y=10:fontcolor=White:fontfile='" + fontPath + "':text='" + extraMessage + "'",
                '-pix_fmt', 'yuv420p',
-               '-b:v', '30000k', '-to', audioDuration, outputFilePath, '-y', '-vsync', 'passthrough']
+                    '-b:v', '30000k', '-to', audioDuration, outputFilePath, '-y', '-fps_mode', 'passthrough']
+
+    cmdLine = " ".join(cmdLineArray)
+
     subprocess.call(cmdLine)
     return
-
 
 def image_transcode_withTags(inputImage, outputImage, burnIns, extraMsg):
     current_dir = os.path.dirname(os.path.realpath(__file__))
