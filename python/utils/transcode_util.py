@@ -35,7 +35,7 @@ def sequence_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate
                                 "drawtext=fontsize=" + str(
              fontSize) + ":x=w-tw-10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='Frame\: %{n}':start_number=1",
          '-pix_fmt', 'yuv420p',
-         '-b:v', '30000k', outputFilePath, '-y', '-vsync', 'passthrough'])
+         '-b:v', '30000k', outputFilePath, '-y', '-fps_mode', 'passthrough'])
     return
 
 
@@ -78,7 +78,7 @@ def video_transcode_audio(fileName, pathToImageSequence, outputFilePath, audio_f
                                         "drawtext=fontsize=" + str(
                      fontSize) + ":x=w-tw-10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='Frame\: %{n}':start_number=1",
                  '-pix_fmt', 'yuv420p',
-                 '-b:v', '30000k', '-to', audioDuration, outputFilePath, '-y', '-vsync', 'passthrough']
+                    '-b:v', '30000k', '-to', audioDuration, outputFilePath, '-y', '-fps_mode', 'passthrough']
 
     extension = pathToImageSequence.split('.')[-1]
     if extension and extension.lower() in ['tif', 'tiff']:
@@ -97,7 +97,7 @@ def video_transcode_audio(fileName, pathToImageSequence, outputFilePath, audio_f
                                             "drawtext=fontsize=" + str(
                          fontSize) + ":x=w-tw-10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='Frame\: %{n}':start_number=1",
                      '-pix_fmt', 'yuv420p',
-                     '-b:v', '30000k', '-to', audioDuration, outputFilePath, '-y', '-vsync', 'passthrough']
+                        '-b:v', '30000k', '-to', audioDuration, outputFilePath, '-y', '-fps_mode', 'passthrough']
 
     cmdLine = " ".join(cmdLineArray)
 
@@ -122,7 +122,7 @@ def video_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate=25
                                         "drawtext=fontsize=" + str(
                      fontSize) + ":x=w-tw-10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='Frame\: %{n}':start_number=1",
                  '-pix_fmt', 'yuv420p',
-                 '-b:v', '30000k', outputFilePath, '-y', '-vsync', 'passthrough']
+                 '-b:v', '30000k', outputFilePath, '-y', '-fps_mode', 'passthrough']
 
     extension = pathToImageSequence.split('.')[-1]
     if extension and extension.lower() in ['tif', 'tiff']:
@@ -135,7 +135,7 @@ def video_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate=25
                                             "drawtext=fontsize=" + str(
                          fontSize) + ":x=w-tw-10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='Frame\: %{n}':start_number=1",
                      '-pix_fmt', 'yuv420p',
-                     '-b:v', '30000k', outputFilePath, '-y', '-vsync', 'passthrough']
+                     '-b:v', '30000k', outputFilePath, '-y', '-fps_mode', 'passthrough']
 
     subprocess.call(call_args)
     return
@@ -156,7 +156,7 @@ def sequence_transcode_withoutTags(pathToImageSequence, outputFilePath, startFra
                                                                                                                                     "drawtext=fontsize=" + str(
                    fontSize - 2) + ":x=(w-text_w)/2:y=10:fontcolor=White:fontfile='" + fontPath + "':text='" + extraMessage + "'",
                '-pix_fmt', 'yuv420p',
-               '-b:v', '30000k', outputFilePath, '-y', '-vsync', 'passthrough']
+               '-b:v', '30000k', outputFilePath, '-y', '-fps_mode', 'passthrough']
     subprocess.call(cmdLine, shell=True)
     return
 
@@ -224,6 +224,6 @@ def image_transcode_withTags(inputImage, outputImage, burnIns, extraMsg):
                                                                                                                                 "drawtext=fontsize=" + str(
                          fontSize) + ":x=(w-text_w)/2:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='" + burnIns + "'",
                      '-pix_fmt', 'yuv420p',
-                     outputImage, '-y', '-vsync', 'passthrough'])
+                     outputImage, '-y', '-fps_mode', 'passthrough'])
 
     return
