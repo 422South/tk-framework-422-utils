@@ -1,6 +1,8 @@
 import datetime
 import os
+import shutil
 import subprocess
+import tempfile
 
 
 def sequence_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate=25):
@@ -59,7 +61,7 @@ def video_transcode_audio(fileName, pathToImageSequence, outputFilePath, audio_f
     audioDuration = '0' + str(datetime.timedelta(seconds=(duration/ float(frame_rate))))
 
     # jim - mix in a silent stream of audio to prevent audio slippage when publishing to SG
-    silenceFile = "S:\\Projects\\422_LIBRARY\\02_ASSETS\\AUDIO\\silence.wav"
+    silenceFile = tempSilence(ffmpegPath)
     audioSlipSpit = audioStartTime.split(":")
     audioSlipSec = audioSlipSpit[2]
     audioDelay = int(float(float(audioSlipSec) * float(frame_rate)) * ((1 / float(frame_rate)) * 1000))
@@ -97,8 +99,11 @@ def video_transcode_audio(fileName, pathToImageSequence, outputFilePath, audio_f
     cmdLine = " ".join(cmdLineArray)
 
     subprocess.call(cmdLine)
-    return
 
+    # clean up temp file
+    killTempSilence(silenceFile)
+
+    return
 
 def video_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate=25):
     fontSize = 38
@@ -136,7 +141,6 @@ def video_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate=25
     subprocess.call(call_args)
     return
 
-
 def sequence_transcode_withoutTags(pathToImageSequence, outputFilePath, startFrame, playblastFileName,
                                    extraMessage='',
                                    frame_rate=25):
@@ -156,7 +160,6 @@ def sequence_transcode_withoutTags(pathToImageSequence, outputFilePath, startFra
                '-b:v', '30000k', outputFilePath, '-y', '-vsync', 'passthrough']
     subprocess.call(cmdLine, shell=True)
     return
-
 
 def sequence_transcode_withoutTags_withAudio(pathToImageSequence, outputFilePath, startFrame, endFrame, frameOffset,
                                              playblastFileName, audioFile, extraMessage='', frame_rate=25):
@@ -192,7 +195,8 @@ def sequence_transcode_withoutTags_withAudio(pathToImageSequence, outputFilePath
     #            '-b:v', '30000k', '-to', audioDuration, outputFilePath, '-y', '-vsync', 'passthrough']
 
     # jim - mix in a silent stream of audio to prevent audio slippage when publishing to SG
-    silenceFile = "S:\\Projects\\422_LIBRARY\\02_ASSETS\\AUDIO\\silence.wav"
+    silenceFile = tempSilence(ffmpegPath)
+
     audioSlipSpit = audioStartTime.split(":")
     audioSlipSec = audioSlipSpit[2]
     audioDelay = int(float(float(audioSlipSec) * float(frame_rate)) * ((1 / float(frame_rate)) * 1000))
@@ -212,7 +216,27 @@ def sequence_transcode_withoutTags_withAudio(pathToImageSequence, outputFilePath
     cmdLine = " ".join(cmdLineArray)
 
     subprocess.call(cmdLine)
+
+    # clean up temp file
+    killTempSilence(silenceFile)
     return
+
+
+def tempSilence(ffmpegPath):
+    # creat temp dir and generate a blank file
+    tempDir = tempfile.mkdtemp()
+    tempFileName = "silence.wav"
+    silenceFile = os.path.join(tempDir, tempFileName)
+    cmdLineSilenceArray = [ffmpegPath, '-f', 'lavfi', '-i anullsrc=channel_layout=stereo:sample_rate=44100', '-t 10', silenceFile]
+    cmdLineSilence = " ".join(cmdLineSilenceArray)
+    subprocess.call(cmdLineSilence)
+    return silenceFile
+
+
+def killTempSilence(silenceFile):
+    # clean up temp dir
+    tempDir = os.path.split(silenceFile)
+    shutil.rmtree(tempDir[0])
 
 def image_transcode_withTags(inputImage, outputImage, burnIns, extraMsg):
     current_dir = os.path.dirname(os.path.realpath(__file__))
