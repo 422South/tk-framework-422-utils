@@ -1,8 +1,6 @@
 import datetime
 import os
-import shutil
 import subprocess
-import tempfile
 
 
 def sequence_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate=25):
@@ -61,15 +59,17 @@ def video_transcode_audio(fileName, pathToImageSequence, outputFilePath, audio_f
     audioDuration = '0' + str(datetime.timedelta(seconds=(duration/ float(frame_rate))))
 
     # jim - mix in a silent stream of audio to prevent audio slippage when publishing to SG
-    silenceFile = tempSilence(ffmpegPath)
     audioSlipSpit = audioStartTime.split(":")
     audioSlipSec = audioSlipSpit[2]
     audioDelay = int(float(float(audioSlipSec) * float(frame_rate)) * ((1 / float(frame_rate)) * 1000))
 
-    cmdLineArray = [ffmpegPath, '-r', str(frame_rate), '-gamma', '2.2', '-i', pathToImageSequence, '-i', logoPath,
-                    '-i', silenceFile, '-i', audio_file,
+    cmdLineArray = [ffmpegPath, '-r', str(frame_rate), '-gamma', '2.2',
+                    '-i', pathToImageSequence,
+                    '-i', logoPath,
+                    '-f', 'lavfi', '-i anullsrc=channel_layout=stereo:sample_rate=44100', '-t 10',
+                    '-i', audio_file,
                     '-filter_complex',
-                    '"[2]adelay=' + str(audioDelay) + '|' + str(audioDelay) + '[a2];[1][a2]amix=inputs=2:duration=longest[a]"', '-map [a]',
+                    '"[3]adelay=' + str(audioDelay) + '|' + str(audioDelay) + '[a2];[4][a2]amix=inputs=2:duration=longest[a]"', '-map [a]',
                  '-filter_complex',
                  "[0:v][1:v]overlay=(main_w-overlay_w)-10:10,"
                  "drawtext=fontsize=" + str(
@@ -82,10 +82,13 @@ def video_transcode_audio(fileName, pathToImageSequence, outputFilePath, audio_f
 
     extension = pathToImageSequence.split('.')[-1]
     if extension and extension.lower() in ['tif', 'tiff']:
-        cmdLineArray = [ffmpegPath, '-r', str(frame_rate), '-i', pathToImageSequence, '-i', logoPath,
-                        '-i', silenceFile, '-i', audio_file,
+        cmdLineArray = [ffmpegPath, '-r', str(frame_rate),
+                        '-i', pathToImageSequence,
+                        '-i', logoPath,
+                        '-f', 'lavfi', '-i anullsrc=channel_layout=stereo:sample_rate=44100', '-t 10',
+                        '-i', audio_file,
                         '-filter_complex',
-                        '"[2]adelay=' + str(audioDelay) + '|' + str(audioDelay) + '[a2];[1][a2]amix=inputs=2:duration=longest[a]"', '-map [a]',
+                        '"[3]adelay=' + str(audioDelay) + '|' + str(audioDelay) + '[a2];[4][a2]amix=inputs=2:duration=longest[a]"', '-map [a]',
                      '-filter_complex',
                      "[0:v][1:v]overlay=(main_w-overlay_w)-10:10,"
                      "drawtext=fontsize=" + str(
@@ -99,10 +102,6 @@ def video_transcode_audio(fileName, pathToImageSequence, outputFilePath, audio_f
     cmdLine = " ".join(cmdLineArray)
 
     subprocess.call(cmdLine)
-
-    # clean up temp file
-    killTempSilence(silenceFile)
-
     return
 
 def video_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate=25):
@@ -184,59 +183,29 @@ def sequence_transcode_withoutTags_withAudio(pathToImageSequence, outputFilePath
             datetime.timedelta(seconds=(float(startFrame) - float(frameOffset)) / float(frame_rate)))
 
     audioDuration = '0' + str(datetime.timedelta(seconds=(float(endFrame) - float(startFrame)) / float(frame_rate)))
-    # cmdLine = [ffmpegPath, '-r', str(frame_rate), '-start_number', startFrame, '-i', pathToImageSequence, '-ss',
-    #            audioStartTime, '-i', audioFile,
-    #            '-filter_complex',
-    #            "drawtext=fontsize=" + str(
-    #                fontSize) + ":x=(w-text_w)/2:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='" + playblastFileName + "',"
-    #                                                                                                                                 "drawtext=fontsize=" + str(
-    #                fontSize - 2) + ":x=(w-text_w)/2:y=10:fontcolor=White:fontfile='" + fontPath + "':text='" + extraMessage + "'",
-    #            '-pix_fmt', 'yuv420p',
-    #            '-b:v', '30000k', '-to', audioDuration, outputFilePath, '-y', '-vsync', 'passthrough']
 
     # jim - mix in a silent stream of audio to prevent audio slippage when publishing to SG
-    silenceFile = tempSilence(ffmpegPath)
-
     audioSlipSpit = audioStartTime.split(":")
     audioSlipSec = audioSlipSpit[2]
     audioDelay = int(float(float(audioSlipSec) * float(frame_rate)) * ((1 / float(frame_rate)) * 1000))
 
-    cmdLineArray = [ffmpegPath, '-r', str(frame_rate), '-start_number', startFrame, '-i', pathToImageSequence,
-                    '-i', silenceFile, '-i', audioFile,
+    cmdLineArray = [ffmpegPath, '-r', str(frame_rate), '-start_number', startFrame,
+                    '-i', pathToImageSequence,
+                    '-f', 'lavfi', '-i anullsrc=channel_layout=stereo:sample_rate=44100', '-t 10',
+                    '-i', audioFile,
                     '-filter_complex',
                     '"[2]adelay=' + str(audioDelay) + '|' + str(audioDelay) + '[a2];[1][a2]amix=inputs=2:duration=longest[a]"', '-map [a]',
-               '-filter_complex',
-               "drawtext=fontsize=" + str(
-                   fontSize) + ":x=(w-text_w)/2:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='" + playblastFileName + "',"
-                                                                                                                                    "drawtext=fontsize=" + str(
-                   fontSize - 2) + ":x=(w-text_w)/2:y=10:fontcolor=White:fontfile='" + fontPath + "':text='" + extraMessage + "'",
-               '-pix_fmt', 'yuv420p',
+                    '-filter_complex',
+                    "drawtext=fontsize=" + str(
+                        fontSize) + ":x=(w-text_w)/2:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='" + playblastFileName + "',"
+                                                                                                                                         "drawtext=fontsize=" + str(
+                        fontSize - 2) + ":x=(w-text_w)/2:y=10:fontcolor=White:fontfile='" + fontPath + "':text='" + extraMessage + "'",
+                    '-pix_fmt', 'yuv420p',
                     '-b:v', '30000k', '-to', audioDuration, outputFilePath, '-y', '-fps_mode', 'passthrough']
 
     cmdLine = " ".join(cmdLineArray)
-
     subprocess.call(cmdLine)
-
-    # clean up temp file
-    killTempSilence(silenceFile)
     return
-
-
-def tempSilence(ffmpegPath):
-    # creat temp dir and generate a blank file
-    tempDir = tempfile.mkdtemp()
-    tempFileName = "silence.wav"
-    silenceFile = os.path.join(tempDir, tempFileName)
-    cmdLineSilenceArray = [ffmpegPath, '-f', 'lavfi', '-i anullsrc=channel_layout=stereo:sample_rate=44100', '-t 10', silenceFile]
-    cmdLineSilence = " ".join(cmdLineSilenceArray)
-    subprocess.call(cmdLineSilence)
-    return silenceFile
-
-
-def killTempSilence(silenceFile):
-    # clean up temp dir
-    tempDir = os.path.split(silenceFile)
-    shutil.rmtree(tempDir[0])
 
 def image_transcode_withTags(inputImage, outputImage, burnIns, extraMsg):
     current_dir = os.path.dirname(os.path.realpath(__file__))
