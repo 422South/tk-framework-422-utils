@@ -2,6 +2,12 @@ import datetime
 import os
 import subprocess
 
+INPUT_PROFILES = {'none': [],
+                  'standard': ['-gamma', '2.2'],
+                  'exr32_Rec709_gamma2.4': ['-gamma', '2.4', '-colorspace', 'bt709', '-color_trc',
+                 'iec61966-2-1']
+                  }
+
 
 def sequence_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate=25):
     # pathToImageSequence example --> publishToCloudTestAsset_scene_persp.v020.%04d.png
@@ -39,7 +45,10 @@ def sequence_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate
     return
 
 
-def video_transcode_audio(fileName, pathToImageSequence, outputFilePath, audio_file, audio_start, start_frame, duration, frame_rate=25):
+def video_transcode_audio(fileName, pathToImageSequence, outputFilePath, audio_file, audio_start, start_frame, duration,
+                          frame_rate=25, input_profile='standard'):
+    if input_profile not in INPUT_PROFILES.keys():
+        raise Exception('Input profile not supported')
     fontSize = 38
     current_dir = os.path.dirname(os.path.realpath(__file__))
     ffmpegPath = os.path.join(current_dir, 'ffmpeg')
@@ -56,55 +65,62 @@ def video_transcode_audio(fileName, pathToImageSequence, outputFilePath, audio_f
         audioStartTime = '0' + str(
             datetime.timedelta(seconds=(float(start_frame) - float(audio_start)) / float(frame_rate)))
 
-    audioDuration = '0' + str(datetime.timedelta(seconds=(duration/ float(frame_rate))))
+    audioDuration = '0' + str(datetime.timedelta(seconds=(duration / float(frame_rate))))
 
     # jim - mix in a silent stream of audio to prevent audio slippage when publishing to SG
     audioSlipSpit = audioStartTime.split(":")
     audioSlipSec = audioSlipSpit[2]
     audioDelay = int(float(float(audioSlipSec) * float(frame_rate)) * ((1 / float(frame_rate)) * 1000))
 
-    cmdLineArray = [ffmpegPath, '-r', str(frame_rate), '-gamma', '2.2',
-                    '-i', pathToImageSequence,
+    cmdLineArray = ([ffmpegPath, '-r', str(frame_rate)]
+                    + INPUT_PROFILES[input_profile]
+                    + ['-i', pathToImageSequence,
                     '-i', logoPath,
                     '-f', 'lavfi', '-i anullsrc=channel_layout=stereo:sample_rate=44100', '-t 10',
                     '-i', audio_file,
                     '-filter_complex',
-                    '"[3]adelay=' + str(audioDelay) + '|' + str(audioDelay) + '[a2];[4][a2]amix=inputs=2:duration=longest[a]"', '-map [a]',
-                 '-filter_complex',
-                 "[0:v][1:v]overlay=(main_w-overlay_w)-10:10,"
-                 "drawtext=fontsize=" + str(
-                     fontSize) + ":x=10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='" + fileName.replace(
-                     '_Tags.mp4', '') + "',"
-                                        "drawtext=fontsize=" + str(
-                     fontSize) + ":x=w-tw-10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='Frame\: %{n}':start_number=1",
-                 '-pix_fmt', 'yuv420p',
-                    '-b:v', '30000k', '-to', audioDuration, outputFilePath, '-y', '-fps_mode', 'passthrough']
+                    '"[3]adelay=' + str(audioDelay) + '|' + str(
+                        audioDelay) + '[a2];[4][a2]amix=inputs=2:duration=longest[a]"', '-map [a]',
+                    '-filter_complex',
+                    "[0:v][1:v]overlay=(main_w-overlay_w)-10:10,"
+                    "drawtext=fontsize=" + str(
+                        fontSize) + ":x=10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='" + fileName.replace(
+                        '_Tags.mp4', '') + "',"
+                                           "drawtext=fontsize=" + str(
+                        fontSize) + ":x=w-tw-10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='Frame\: %{n}':start_number=1",
+                    '-pix_fmt', 'yuv420p',
+                    '-b:v', '30000k', '-to', audioDuration, outputFilePath, '-y', '-fps_mode', 'passthrough'])
 
     extension = pathToImageSequence.split('.')[-1]
     if extension and extension.lower() in ['tif', 'tiff']:
-        cmdLineArray = [ffmpegPath, '-r', str(frame_rate),
-                        '-i', pathToImageSequence,
+        cmdLineArray = ([ffmpegPath, '-r', str(frame_rate)]
+                        + INPUT_PROFILES[input_profile] +
+                        ['-i', pathToImageSequence,
                         '-i', logoPath,
                         '-f', 'lavfi', '-i anullsrc=channel_layout=stereo:sample_rate=44100', '-t 10',
                         '-i', audio_file,
                         '-filter_complex',
-                        '"[3]adelay=' + str(audioDelay) + '|' + str(audioDelay) + '[a2];[4][a2]amix=inputs=2:duration=longest[a]"', '-map [a]',
-                     '-filter_complex',
-                     "[0:v][1:v]overlay=(main_w-overlay_w)-10:10,"
-                     "drawtext=fontsize=" + str(
-                         fontSize) + ":x=10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='" + fileName.replace(
-                         '_Tags.mp4', '') + "',"
-                                            "drawtext=fontsize=" + str(
-                         fontSize) + ":x=w-tw-10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='Frame\: %{n}':start_number=1",
-                     '-pix_fmt', 'yuv420p',
-                        '-b:v', '30000k', '-to', audioDuration, outputFilePath, '-y', '-fps_mode', 'passthrough']
+                        '"[3]adelay=' + str(audioDelay) + '|' + str(
+                            audioDelay) + '[a2];[4][a2]amix=inputs=2:duration=longest[a]"', '-map [a]',
+                        '-filter_complex',
+                        "[0:v][1:v]overlay=(main_w-overlay_w)-10:10,"
+                        "drawtext=fontsize=" + str(
+                            fontSize) + ":x=10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='" + fileName.replace(
+                            '_Tags.mp4', '') + "',"
+                                               "drawtext=fontsize=" + str(
+                            fontSize) + ":x=w-tw-10:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='Frame\: %{n}':start_number=1",
+                        '-pix_fmt', 'yuv420p',
+                        '-b:v', '30000k', '-to', audioDuration, outputFilePath, '-y', '-fps_mode', 'passthrough'])
 
     cmdLine = " ".join(cmdLineArray)
 
     subprocess.call(cmdLine)
     return
 
-def video_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate=25):
+
+def video_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate=25, input_profile='standard'):
+    if input_profile not in INPUT_PROFILES.keys():
+        raise Exception('Input profile not supported')
     fontSize = 38
     current_dir = os.path.dirname(os.path.realpath(__file__))
     ffmpegPath = os.path.join(current_dir, 'ffmpeg')
@@ -113,7 +129,7 @@ def video_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate=25
         ':', '\:')
     # fontPath requires some weird formatting to work inside subprocess for ffmpeg.exe
     # The : needs to be escaped, no other backslashes can be present
-    call_args = [ffmpegPath, '-r', str(frame_rate), '-gamma', '2.2', '-i', pathToImageSequence, '-i', logoPath,
+    call_args = [ffmpegPath, '-r', str(frame_rate)] + INPUT_PROFILES[input_profile] + ['-i', pathToImageSequence, '-i', logoPath,
                  '-filter_complex',
                  "[0:v][1:v]overlay=(main_w-overlay_w)-10:10,"
                  "drawtext=fontsize=" + str(
@@ -126,7 +142,7 @@ def video_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate=25
 
     extension = pathToImageSequence.split('.')[-1]
     if extension and extension.lower() in ['tif', 'tiff']:
-        call_args = [ffmpegPath, '-r', str(frame_rate), '-i', pathToImageSequence, '-i', logoPath,
+        call_args = [ffmpegPath, '-r', str(frame_rate)] + INPUT_PROFILES[input_profile] + [ '-i', pathToImageSequence, '-i', logoPath,
                      '-filter_complex',
                      "[0:v][1:v]overlay=(main_w-overlay_w)-10:10,"
                      "drawtext=fontsize=" + str(
@@ -139,6 +155,7 @@ def video_transcode(fileName, pathToImageSequence, outputFilePath, frame_rate=25
 
     subprocess.call(call_args)
     return
+
 
 def sequence_transcode_withoutTags(pathToImageSequence, outputFilePath, startFrame, playblastFileName,
                                    extraMessage='',
@@ -160,8 +177,10 @@ def sequence_transcode_withoutTags(pathToImageSequence, outputFilePath, startFra
     subprocess.call(cmdLine, shell=True)
     return
 
+
 def sequence_transcode_withoutTags_withAudio(pathToImageSequence, outputFilePath, startFrame, endFrame, frameOffset,
-                                             playblastFileName, audioFile, extraMessage='', frame_rate=25):
+                                             playblastFileName, audioFile, extraMessage='', frame_rate=25,
+                                             input_profile='standard'):
     current_dir = os.path.dirname(os.path.realpath(__file__))
     ffmpegPath = os.path.join(current_dir, 'ffmpeg')
 
@@ -194,7 +213,8 @@ def sequence_transcode_withoutTags_withAudio(pathToImageSequence, outputFilePath
                     '-f', 'lavfi', '-i anullsrc=channel_layout=stereo:sample_rate=44100', '-t 10',
                     '-i', audioFile,
                     '-filter_complex',
-                    '"[2]adelay=' + str(audioDelay) + '|' + str(audioDelay) + '[a2];[1][a2]amix=inputs=2:duration=longest[a]"', '-map [a]',
+                    '"[2]adelay=' + str(audioDelay) + '|' + str(
+                        audioDelay) + '[a2];[1][a2]amix=inputs=2:duration=longest[a]"', '-map [a]',
                     '-filter_complex',
                     "drawtext=fontsize=" + str(
                         fontSize) + ":x=(w-text_w)/2:y=h-th-10:fontcolor=White:fontfile='" + fontPath + "':text='" + playblastFileName + "',"
@@ -206,6 +226,7 @@ def sequence_transcode_withoutTags_withAudio(pathToImageSequence, outputFilePath
     cmdLine = " ".join(cmdLineArray)
     subprocess.call(cmdLine)
     return
+
 
 def image_transcode_withTags(inputImage, outputImage, burnIns, extraMsg):
     current_dir = os.path.dirname(os.path.realpath(__file__))
