@@ -163,6 +163,8 @@ def sequence_transcode_withoutTags(pathToImageSequence, outputFilePath, startFra
     current_dir = os.path.dirname(os.path.realpath(__file__))
     ffmpegPath = os.path.join(current_dir, 'ffmpeg')
 
+    extraMessage = extraMessage.replace(":", "|")
+
     fontSize = 38
     fontPath = os.path.join(current_dir, 'Moderat-Regular.otf').replace('\\', '/').replace(
         ':', '\:')
@@ -208,6 +210,8 @@ def sequence_transcode_withoutTags_withAudio(pathToImageSequence, outputFilePath
     audioSlipSec = audioSlipSpit[2]
     audioDelay = int(float(float(audioSlipSec) * float(frame_rate)) * ((1 / float(frame_rate)) * 1000))
 
+    extraMessage = extraMessage.replace(":", "|")
+
     cmdLineArray = [ffmpegPath, '-r', str(frame_rate), '-start_number', startFrame,
                     '-i', pathToImageSequence,
                     '-f', 'lavfi', '-i anullsrc=channel_layout=stereo:sample_rate=44100', '-t 10',
@@ -227,10 +231,11 @@ def sequence_transcode_withoutTags_withAudio(pathToImageSequence, outputFilePath
     subprocess.call(cmdLine)
     return
 
-
 def image_transcode_withTags(inputImage, outputImage, burnIns, extraMsg):
     current_dir = os.path.dirname(os.path.realpath(__file__))
     ffmpegPath = os.path.join(current_dir, 'ffmpeg')
+
+    extraMsg = extraMsg.replace(":", "|")
 
     fontSize = 18
     fontPath = os.path.join(current_dir, 'Moderat-Regular.otf').replace('\\', '/').replace(
